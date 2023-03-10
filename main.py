@@ -2,6 +2,7 @@ import json
 
 from flask import Flask, request, jsonify, make_response
 import requests
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -14,7 +15,15 @@ def check_if_name_exists_in_list(name):
     return False
 
 def check_if_ninjas_recognize_name(dish_name):
-    return True
+    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dish_name)
+    response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    json_dict = response.json()
+    if response.status_code == requests.codes.ok:
+        if len(json_dict) > 0 and "name" in json_dict[0] and json_dict[0]["name"] == dish_name:
+            return True
+    return False
+
+
 
 def check_for_errors(data):
     content_type = request.headers.get("Content-Type")
@@ -25,11 +34,6 @@ def check_for_errors(data):
     if "name" not in data:
         output = make_response(jsonify(-1), 400)
         return output
-
-
-    ninjas_api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(data['name'])
-    response = requests.get(ninjas_api_url)
-    status_code = response.status_code
 
     # That dish of given name already exists
     name_exists_in_list = check_if_name_exists_in_list(data['name'])
