@@ -26,6 +26,7 @@ def check_if_ninjas_recognize_name(dish_name):
 
 
 def check_for_errors(data):
+    # Request content-type is not application/json
     content_type = request.headers.get("Content-Type")
     if content_type != 'application/json':
         return make_response(jsonify(0), 415)
@@ -42,8 +43,10 @@ def check_for_errors(data):
         return output
 
     # API was not reachable, or some server error
-    # if status_code != 200 and status_code != 201:
-    #    return make_response(jsonify(-4), 400)
+    api_url = 'https://api.api-ninjas.com/v1/nutrition'
+    response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    if response.status_code // 100 != 2 and response.status_code // 100 != 3 and response.status_code // 100 != 4:
+        return make_response(jsonify(-4), 400)
 
     # Ninjas API doesn't recognize dish name
     name_exists_in_ninjas_api = check_if_ninjas_recognize_name(data['name'])
