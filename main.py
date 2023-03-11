@@ -77,12 +77,12 @@ def get_json_all_dishes():
     # Scan the array, and for every name in it - get details from ninjasAPI and add it to a json file.
     # At the end, return the json file.
     combined_json = {}
-    for dish_name in dishes_list:
+    for index, dish_name in enumerate(dishes_list):
         api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dish_name)
         response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
-        json_dict = response.json()[0]
-        combined_json.update(json_dict)
-    return json.dumps(combined_json)
+        json_dict = response.json()
+        combined_json[str(index)] = json_dict[0]
+    return json.dumps(combined_json, indent=4)
 
 
 app.run(host="localhost", port="8496", debug=True)
