@@ -93,11 +93,45 @@ def get_specific_dish(id_or_name):
     else:
         return get_dish_by_name(id_or_name)
 
+@app.get('/dishes/')
+def name_or_id_not_specified_GET():
+    return make_response(jsonify(-1), 400)
+
+@app.delete('/dishes/')
+def name_or_id_not_specified_DELETE():
+    return make_response(jsonify(-1), 400)
+
+@app.delete('/dishes/<id_or_name>')
+def delete_specific_dish(id_or_name):
+    if "0" <= str(id_or_name[0]) <= "9":
+        return delete_dish_by_id(id_or_name)
+    else:
+        return delete_dish_by_name(id_or_name)
+
+
+def delete_dish_by_id(dish_id):
+    dish_id = int(dish_id)
+    if dish_id == 0 or dish_id >= len(dishes_list) or dishes_list[dish_id] == {}:
+        return make_response(jsonify(-5), 404)
+    else:
+        # del dishes_list[dish_id]
+        dishes_list[dish_id] = {}
+        return jsonify(dish_id)
+
+def delete_dish_by_name(dish_name):
+    try:
+        index_of_dish = dishes_list.index(dish_name)
+        # del dishes_list[index_of_dish]
+        dishes_list[index_of_dish] = {}
+        return jsonify(index_of_dish)
+    except ValueError:
+        return make_response(jsonify(-5), 404)
+
 
 def get_dish_by_id(dish_id):
     dish_id = int(dish_id)
-    if dish_id == 0 or dish_id >= len(dishes_list):
-        return
+    if dish_id == 0 or dish_id >= len(dishes_list) or dishes_list[dish_id] == {}:
+        return make_response(jsonify(-5), 404)
     else:
         dictforjson = get_dictionary_for_json(dish_id)
         return json.dumps(dictforjson, indent=4)
@@ -108,7 +142,7 @@ def get_dish_by_name(name):
         dictforjson = get_dictionary_for_json(index_of_dish)
         return json.dumps(dictforjson, indent=4)
     except ValueError:
-        return
+        return make_response(jsonify(-5), 404)
 
 def get_dictionary_for_json(dish_index):
     api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dishes_list[dish_index])
