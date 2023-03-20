@@ -4,12 +4,14 @@ from flask import Flask, request, jsonify, make_response
 from collections import OrderedDict
 import requests
 import json
+
 app = Flask(__name__)
 
 # Python list
 dishes_list = [{}]
 meals_list = [{}]
 meals_dict = [{}]
+
 
 def check_if_name_exists_in_list(name):
     if name in dishes_list:
@@ -99,12 +101,12 @@ def get_specific_dish(id_or_name):
 
 
 @app.get('/dishes/')
-def name_or_id_not_specified_GET():
+def name_or_id_not_specified_get_dishes():
     return make_response(jsonify(-1), 400)
 
 
 @app.delete('/dishes/')
-def name_or_id_not_specified_DELETE():
+def name_or_id_not_specified_delete_dishes():
     return make_response(jsonify(-1), 400)
 
 
@@ -173,6 +175,7 @@ def show_only_requested_json_keys(original_dict):
 
     return new_dict
 
+
 # Meals
 
 
@@ -199,7 +202,7 @@ def add_meal():
 def get_json_all_meals():
     combined_json = {}
     for index, meal_name in enumerate(meals_list):
-        if index is not 0:
+        if index != 0 and index <= len(meals_list) and meals_list[index] != {}:
             meal = meals_dict[int(index)]
             appetizer_id = meal["appetizer"]
             main_id = meal["main"]
@@ -244,14 +247,16 @@ def check_for_errors_in_meals(data):
     main_id = int(data['main'])
     dessert_id = int(data['dessert'])
 
-    if check_if_dish_in_list_by_id(appetizer_id) is False or check_if_dish_in_list_by_id(main_id) is False or check_if_dish_in_list_by_id(dessert_id) is False:
+    if check_if_dish_in_list_by_id(appetizer_id) is False or check_if_dish_in_list_by_id(
+            main_id) is False or check_if_dish_in_list_by_id(dessert_id) is False:
         return make_response(jsonify(-5), 404)
 
     appetizer = dishes_list[int(appetizer_id)]
     main = dishes_list[int(main_id)]
     dessert = dishes_list[int(dessert_id)]
 
-    if check_if_name_exists_in_list(appetizer) and check_if_name_exists_in_list(main) and check_if_name_exists_in_list(dessert):
+    if check_if_name_exists_in_list(appetizer) and check_if_name_exists_in_list(main) and check_if_name_exists_in_list(
+            dessert):
         return None
     else:
         return make_response(jsonify(-5), 404)
@@ -287,6 +292,140 @@ def get_sum(param, appetizer_id, main_id, dessert_id):
     dessert_param = dessert_json_dict[0][param]
 
     return appetizer_param + main_param + dessert_param
+
+
+@app.get('/meals/<id_or_name>')
+def get_specific_meal(id_or_name):
+    if "0" <= str(id_or_name[0]) <= "9":
+        return get_meal_by_id(id_or_name)
+    else:
+        return get_meal_by_name(id_or_name)
+
+
+def get_meal_by_id(meal_id):
+    meal_id = int(meal_id)
+    if meal_id == 0 or meal_id >= len(meals_list) or meals_list[meal_id] == {}:
+        return make_response(jsonify(-5), 404)
+    else:
+        meal = meals_dict[int(meal_id)]
+        appetizer_id = meal["appetizer"]
+        main_id = meal["main"]
+        dessert_id = meal["dessert"]
+
+        cal_sum = get_sum("calories", appetizer_id, main_id, dessert_id)
+        sodium_sum = get_sum("sodium_mg", appetizer_id, main_id, dessert_id)
+        sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
+
+        new_dict = OrderedDict()
+        index_of_dish = meals_list.index(meal["name"])
+        new_dict["name"] = meal["name"]
+        new_dict["ID"] = index_of_dish
+        new_dict["appetizer"] = appetizer_id
+        new_dict["main"] = main_id
+        new_dict["dessert"] = dessert_id
+        new_dict["cal"] = cal_sum
+        new_dict["sodium"] = sodium_sum
+        new_dict["sugar"] = sugar_sum
+
+        if new_dict:
+            dict_for_json = new_dict
+
+        return json.dumps(dict_for_json, indent=4)
+
+
+def get_meal_by_name(name):
+    try:
+        meal_id = meals_list.index(name)
+        meal = meals_dict[int(meal_id)]
+        appetizer_id = meal["appetizer"]
+        main_id = meal["main"]
+        dessert_id = meal["dessert"]
+
+        cal_sum = get_sum("calories", appetizer_id, main_id, dessert_id)
+        sodium_sum = get_sum("sodium_mg", appetizer_id, main_id, dessert_id)
+        sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
+
+        new_dict = OrderedDict()
+        index_of_dish = meals_list.index(meal["name"])
+        new_dict["name"] = meal["name"]
+        new_dict["ID"] = index_of_dish
+        new_dict["appetizer"] = appetizer_id
+        new_dict["main"] = main_id
+        new_dict["dessert"] = dessert_id
+        new_dict["cal"] = cal_sum
+        new_dict["sodium"] = sodium_sum
+        new_dict["sugar"] = sugar_sum
+
+        if new_dict:
+            dict_for_json = new_dict
+        return json.dumps(dict_for_json, indent=4)
+    except ValueError:
+        return make_response(jsonify(-5), 404)
+
+
+@app.delete('/meals/<id_or_name>')
+def delete_specific_meal(id_or_name):
+    if "0" <= str(id_or_name[0]) <= "9":
+        return delete_meal_by_id(id_or_name)
+    else:
+        return delete_meal_by_name(id_or_name)
+
+
+def delete_meal_by_id(meal_id):
+    meal_id = int(meal_id)
+    if meal_id == 0 or meal_id >= len(meals_list) or meals_list[meal_id] == {}:
+        return make_response(jsonify(-5), 404)
+    else:
+        # del dishes_list[dish_id]
+        meals_list[meal_id] = {}
+        meals_dict[meal_id] = {}
+        return jsonify(meal_id)
+
+
+def delete_meal_by_name(meal_name):
+    try:
+        index_of_meal = meals_list.index(meal_name)
+        # del dishes_list[index_of_dish]
+        meals_list[index_of_meal] = {}
+        meals_dict[index_of_meal] = {}
+        return jsonify(index_of_meal)
+    except ValueError:
+        return make_response(jsonify(-5), 404)
+
+
+@app.get('/meals/')
+def name_or_id_not_specified_get_meals():
+    return make_response(jsonify(-1), 400)
+
+
+@app.delete('/meals/')
+def name_or_id_not_specified_delete_meals():
+    return make_response(jsonify(-1), 400)
+
+
+@app.put('/meals/<meal_id>')
+def put_meal_new_details(meal_id):
+    meal_id = int(meal_id)
+
+    if "0" <= str(meal_id[0]) <= "9":
+        content_type = request.headers.get('Content-Type')
+        if content_type != 'application/json':
+            return make_response(jsonify(0), 415)
+
+        data = request.get_json()
+        response = check_for_errors_in_meals(data)
+        if response is not None:
+            return response
+
+        meals_list[meal_id] = data['name']
+        meals_dict[meal_id]["name"] = data['name']
+        meals_dict[meal_id]["appetizer"] = data['appetizer']
+        meals_dict[meal_id]["main"] = data['main']
+        meals_dict[meal_id]["dessert"] = data['dessert']
+
+        return make_response(jsonify(meal_id), 200)
+    else:
+        return make_response(jsonify(-1), 400)
 
 
 app.run(host="localhost", port="8496", debug=True)
