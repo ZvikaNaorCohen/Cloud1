@@ -20,9 +20,12 @@ def check_if_name_exists_in_list(name):
 def check_if_ninjas_recognize_name(dish_name):
     api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dish_name)
     response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
-    json_dict = response.json()
-    if response.status_code == requests.codes.ok:
-        if len(json_dict) > 0 and "name" in json_dict[0] and json_dict[0]["name"] == dish_name:
+    json_dict = response.json()  # [{brisket},{fries}]
+    if response.status_code == requests.codes.ok and len(json_dict) > 0:
+        if len(json_dict) == 2:
+            if "name" in json_dict[0] and "name" in json_dict[1] and json_dict[0]["name"] in dish_name and json_dict[1]["name"] in dish_name:
+                return True
+        elif "name" in json_dict[0] and json_dict[0]["name"] == dish_name:
             return True
     return False
 
@@ -85,7 +88,10 @@ def get_json_all_dishes():
         api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dish_name)
         response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
         json_dict = response.json()
-        if json_dict:
+
+        if len(json_dict) == 2:
+            combined_json[str(index)] = show_only_requested_json_keys_for_combined_dish(dish_name, json_dict[0], json_dict[1])
+        elif json_dict:
             combined_json[str(index)] = show_only_requested_json_keys(json_dict[0])
     return json.dumps(combined_json, indent=4)
 
@@ -170,6 +176,19 @@ def show_only_requested_json_keys(original_dict):
     new_dict["size"] = original_dict["serving_size_g"]
     new_dict["sodium"] = original_dict["sodium_mg"]
     new_dict["sugar"] = original_dict["sugar_g"]
+
+    return new_dict
+
+
+def show_only_requested_json_keys_for_combined_dish(original_name, first_meal_dict, second_meal_dict):
+    new_dict = OrderedDict()
+    index_of_dish = dishes_list.index(original_name)
+    new_dict["name"] = original_name
+    new_dict["ID"] = index_of_dish
+    new_dict["cal"] = first_meal_dict["calories"] + second_meal_dict["calories"]
+    new_dict["size"] = first_meal_dict["serving_size_g"] + second_meal_dict["serving_size_g"]
+    new_dict["sodium"] = first_meal_dict["sodium_mg"] + second_meal_dict["sodium_mg"]
+    new_dict["sugar"] = first_meal_dict["sugar_g"] + second_meal_dict["sugar_g"]
 
     return new_dict
 
