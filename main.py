@@ -1,5 +1,3 @@
-import collections
-
 from flask import Flask, request, jsonify, make_response
 from collections import OrderedDict
 import requests
@@ -143,15 +141,15 @@ def get_dish_by_id(dish_id):
     if dish_id == 0 or dish_id >= len(dishes_list) or dishes_list[dish_id] == {}:
         return make_response(jsonify(-5), 404)
     else:
-        dictforjson = get_dictionary_for_json(dish_id)
-        return json.dumps(dictforjson, indent=4)
+        dict_for_json = get_dictionary_for_json(dish_id)
+        return json.dumps(dict_for_json, indent=4)
 
 
 def get_dish_by_name(name):
     try:
         index_of_dish = dishes_list.index(name)
-        dictforjson = get_dictionary_for_json(index_of_dish)
-        return json.dumps(dictforjson, indent=4)
+        dict_for_json = get_dictionary_for_json(index_of_dish)
+        return json.dumps(dict_for_json, indent=4)
     except ValueError:
         return make_response(jsonify(-5), 404)
 
@@ -187,7 +185,6 @@ def add_meal():
 
     data = request.get_json()
     response = check_for_errors_in_meals(data)
-    # "None" means no errors in the previous checks.
     if response is not None:
         return response
 
@@ -204,25 +201,7 @@ def get_json_all_meals():
     for index, meal_name in enumerate(meals_list):
         if index != 0 and index <= len(meals_list) and meals_list[index] != {}:
             meal = meals_dict[int(index)]
-            appetizer_id = meal["appetizer"]
-            main_id = meal["main"]
-            dessert_id = meal["dessert"]
-
-            cal_sum = get_sum("calories", appetizer_id, main_id, dessert_id)
-            sodium_sum = get_sum("sodium_mg", appetizer_id, main_id, dessert_id)
-            sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
-
-            new_dict = OrderedDict()
-            index_of_dish = meals_list.index(meal["name"])
-            new_dict["name"] = meal["name"]
-            new_dict["ID"] = index_of_dish
-            new_dict["appetizer"] = appetizer_id
-            new_dict["main"] = main_id
-            new_dict["dessert"] = dessert_id
-            new_dict["cal"] = cal_sum
-            new_dict["sodium"] = sodium_sum
-            new_dict["sugar"] = sugar_sum
-
+            new_dict = create_specific_meal_dict(meal)
             if new_dict:
                 combined_json[str(index)] = new_dict
 
@@ -262,9 +241,9 @@ def check_for_errors_in_meals(data):
         return make_response(jsonify(-5), 404)
 
 
-def check_if_dish_in_list_by_id(id):
-    id = int(id)
-    if id == 0 or id >= len(dishes_list) or dishes_list[id] == {}:
+def check_if_dish_in_list_by_id(dish_id):
+    dish_id = int(dish_id)
+    if dish_id == 0 or dish_id >= len(dishes_list) or dishes_list[dish_id] == {}:
         return False
     return True
 
@@ -308,25 +287,7 @@ def get_meal_by_id(meal_id):
         return make_response(jsonify(-5), 404)
     else:
         meal = meals_dict[int(meal_id)]
-        appetizer_id = meal["appetizer"]
-        main_id = meal["main"]
-        dessert_id = meal["dessert"]
-
-        cal_sum = get_sum("calories", appetizer_id, main_id, dessert_id)
-        sodium_sum = get_sum("sodium_mg", appetizer_id, main_id, dessert_id)
-        sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
-
-        new_dict = OrderedDict()
-        index_of_dish = meals_list.index(meal["name"])
-        new_dict["name"] = meal["name"]
-        new_dict["ID"] = index_of_dish
-        new_dict["appetizer"] = appetizer_id
-        new_dict["main"] = main_id
-        new_dict["dessert"] = dessert_id
-        new_dict["cal"] = cal_sum
-        new_dict["sodium"] = sodium_sum
-        new_dict["sugar"] = sugar_sum
-
+        new_dict = create_specific_meal_dict(meal)
         if new_dict:
             dict_for_json = new_dict
 
@@ -337,30 +298,36 @@ def get_meal_by_name(name):
     try:
         meal_id = meals_list.index(name)
         meal = meals_dict[int(meal_id)]
-        appetizer_id = meal["appetizer"]
-        main_id = meal["main"]
-        dessert_id = meal["dessert"]
-
-        cal_sum = get_sum("calories", appetizer_id, main_id, dessert_id)
-        sodium_sum = get_sum("sodium_mg", appetizer_id, main_id, dessert_id)
-        sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
-
-        new_dict = OrderedDict()
-        index_of_dish = meals_list.index(meal["name"])
-        new_dict["name"] = meal["name"]
-        new_dict["ID"] = index_of_dish
-        new_dict["appetizer"] = appetizer_id
-        new_dict["main"] = main_id
-        new_dict["dessert"] = dessert_id
-        new_dict["cal"] = cal_sum
-        new_dict["sodium"] = sodium_sum
-        new_dict["sugar"] = sugar_sum
-
+        new_dict = create_specific_meal_dict(meal)
         if new_dict:
             dict_for_json = new_dict
         return json.dumps(dict_for_json, indent=4)
+
     except ValueError:
         return make_response(jsonify(-5), 404)
+
+
+def create_specific_meal_dict(meal):
+    appetizer_id = meal["appetizer"]
+    main_id = meal["main"]
+    dessert_id = meal["dessert"]
+
+    cal_sum = get_sum("calories", appetizer_id, main_id, dessert_id)
+    sodium_sum = get_sum("sodium_mg", appetizer_id, main_id, dessert_id)
+    sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
+
+    new_dict = OrderedDict()
+    index_of_dish = meals_list.index(meal["name"])
+    new_dict["name"] = meal["name"]
+    new_dict["ID"] = index_of_dish
+    new_dict["appetizer"] = appetizer_id
+    new_dict["main"] = main_id
+    new_dict["dessert"] = dessert_id
+    new_dict["cal"] = cal_sum
+    new_dict["sodium"] = sodium_sum
+    new_dict["sugar"] = sugar_sum
+
+    return new_dict
 
 
 @app.delete('/meals/<id_or_name>')
@@ -376,7 +343,6 @@ def delete_meal_by_id(meal_id):
     if meal_id == 0 or meal_id >= len(meals_list) or meals_list[meal_id] == {}:
         return make_response(jsonify(-5), 404)
     else:
-        # del dishes_list[dish_id]
         meals_list[meal_id] = {}
         meals_dict[meal_id] = {}
         return jsonify(meal_id)
@@ -385,7 +351,6 @@ def delete_meal_by_id(meal_id):
 def delete_meal_by_name(meal_name):
     try:
         index_of_meal = meals_list.index(meal_name)
-        # del dishes_list[index_of_dish]
         meals_list[index_of_meal] = {}
         meals_dict[index_of_meal] = {}
         return jsonify(index_of_meal)
@@ -405,9 +370,8 @@ def name_or_id_not_specified_delete_meals():
 
 @app.put('/meals/<meal_id>')
 def put_meal_new_details(meal_id):
-    meal_id = int(meal_id)
-
-    if "0" <= str(meal_id[0]) <= "9":
+    if "0" <= str(meal_id[0]) <= "9" and meals_list[int(meal_id)] != {}:
+        meal_id = int(meal_id)
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
             return make_response(jsonify(0), 415)
@@ -417,15 +381,19 @@ def put_meal_new_details(meal_id):
         if response is not None:
             return response
 
-        meals_list[meal_id] = data['name']
-        meals_dict[meal_id]["name"] = data['name']
-        meals_dict[meal_id]["appetizer"] = data['appetizer']
-        meals_dict[meal_id]["main"] = data['main']
-        meals_dict[meal_id]["dessert"] = data['dessert']
+        change_meal(meal_id, data)
 
         return make_response(jsonify(meal_id), 200)
     else:
         return make_response(jsonify(-1), 400)
 
 
-app.run(host="localhost", port="8496", debug=True)
+def change_meal(meal_id, new_meal):
+    meals_list[meal_id] = new_meal['name']
+    meals_dict[meal_id]["name"] = new_meal['name']
+    meals_dict[meal_id]["appetizer"] = new_meal['appetizer']
+    meals_dict[meal_id]["main"] = new_meal['main']
+    meals_dict[meal_id]["dessert"] = new_meal['dessert']
+
+
+app.run(host="localhost", port=8496, debug=True)
