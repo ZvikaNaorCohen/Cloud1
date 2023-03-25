@@ -18,8 +18,10 @@ def check_if_name_exists_in_list(name):
 
 
 def check_if_ninjas_recognize_name(dish_name):
-    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dish_name)
-    response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(
+        dish_name)
+    response = requests.get(
+        api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
     json_dict = response.json()  # [{brisket},{fries}]
     if response.status_code == requests.codes.ok and len(json_dict) > 0:
         if len(json_dict) == 2:
@@ -49,7 +51,8 @@ def check_for_errors(data):
 
     # API was not reachable, or some server error
     api_url = 'https://api.api-ninjas.com/v1/nutrition'
-    response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    response = requests.get(
+        api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
     if response.status_code // 100 != 2 and response.status_code // 100 != 3 and response.status_code // 100 != 4:
         return make_response(jsonify(-4), 400)
 
@@ -85,14 +88,23 @@ def add_dish():
 def get_json_all_dishes():
     combined_json = {}
     for index, dish_name in enumerate(dishes_list):
-        api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dish_name)
-        response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
-        json_dict = response.json()
+        if index > 0:
+            api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(
+                dish_name)
+            response = requests.get(
+                api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+            json_dict = response.json()
+            print(json_dict)
+            if json_dict != {'message': 'Internal server error'} and 'message' not in json_dict and isinstance(json_dict, list):
+                if len(json_dict) == 2:
+                    combined_json[str(index)] = show_only_requested_json_keys_for_combined_dish(
+                        dish_name, json_dict[0], json_dict[1])
+                elif len(json_dict) == 1:
+                    combined_json[str(index)] = show_only_requested_json_keys(
+                        json_dict[0])
+            else:
+                return make_response(jsonify(-4), 400)
 
-        if len(json_dict) == 2:
-            combined_json[str(index)] = show_only_requested_json_keys_for_combined_dish(dish_name, json_dict[0], json_dict[1])
-        elif json_dict:
-            combined_json[str(index)] = show_only_requested_json_keys(json_dict[0])
     return json.dumps(combined_json, indent=4)
 
 
@@ -161,8 +173,10 @@ def get_dish_by_name(name):
 
 
 def get_dictionary_for_json(dish_index):
-    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dishes_list[dish_index])
-    response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(
+        dishes_list[dish_index])
+    response = requests.get(
+        api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
     json_dict = response.json()
     return show_only_requested_json_keys(json_dict[0])
 
@@ -185,10 +199,14 @@ def show_only_requested_json_keys_for_combined_dish(original_name, first_meal_di
     index_of_dish = dishes_list.index(original_name)
     new_dict["name"] = original_name
     new_dict["ID"] = index_of_dish
-    new_dict["cal"] = first_meal_dict["calories"] + second_meal_dict["calories"]
-    new_dict["size"] = first_meal_dict["serving_size_g"] + second_meal_dict["serving_size_g"]
-    new_dict["sodium"] = first_meal_dict["sodium_mg"] + second_meal_dict["sodium_mg"]
-    new_dict["sugar"] = first_meal_dict["sugar_g"] + second_meal_dict["sugar_g"]
+    new_dict["cal"] = first_meal_dict["calories"] + \
+        second_meal_dict["calories"]
+    new_dict["size"] = first_meal_dict["serving_size_g"] + \
+        second_meal_dict["serving_size_g"]
+    new_dict["sodium"] = first_meal_dict["sodium_mg"] + \
+        second_meal_dict["sodium_mg"]
+    new_dict["sugar"] = first_meal_dict["sugar_g"] + \
+        second_meal_dict["sugar_g"]
 
     return new_dict
 
@@ -221,7 +239,9 @@ def get_json_all_meals():
         if index != 0 and index <= len(meals_list) and meals_list[index] != {}:
             meal = meals_dict[int(index)]
             new_dict = create_specific_meal_dict(meal)
-            if new_dict:
+            if new_dict == {}:
+                return make_response(jsonify(-4), 400)
+            elif new_dict:
                 combined_json[str(index)] = new_dict
 
     return json.dumps(combined_json, indent=4)
@@ -272,21 +292,41 @@ def check_if_name_exists_in_meals_list(name):
         return True
     return False
 
+# If one of the responses is 'Internal server error' return -1
+
 
 def get_sum(param, appetizer_id, main_id, dessert_id):
-    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dishes_list[int(appetizer_id)])
-    appetizer_response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(
+        dishes_list[int(appetizer_id)])
+    appetizer_response = requests.get(
+        api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
     appetizer_json_dict = appetizer_response.json()
+
+    if appetizer_json_dict == {'message': 'Internal server error'}:
+        return -1
+
     appetizer_param = appetizer_json_dict[0][param]
 
-    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dishes_list[int(main_id)])
-    main_response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(
+        dishes_list[int(main_id)])
+    main_response = requests.get(
+        api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
     main_json_dict = main_response.json()
+
+    if main_json_dict == {'message': 'Internal server error'}:
+        return -1
+
     main_param = main_json_dict[0][param]
 
-    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(dishes_list[int(dessert_id)])
-    dessert_response = requests.get(api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
+    api_url = 'https://api.api-ninjas.com/v1/nutrition?query={}'.format(
+        dishes_list[int(dessert_id)])
+    dessert_response = requests.get(
+        api_url, headers={'X-Api-Key': 'j5GLOwZ/nqeLvuK8bUn00w==0p7X3UH2sBwzMYva'})
     dessert_json_dict = dessert_response.json()
+
+    if dessert_json_dict == {'message': 'Internal server error'}:
+        return -1
+
     dessert_param = dessert_json_dict[0][param]
 
     return appetizer_param + main_param + dessert_param
@@ -325,6 +365,8 @@ def get_meal_by_name(name):
     except ValueError:
         return make_response(jsonify(-5), 404)
 
+# If one of the get_sum value is -1 return an empty list
+
 
 def create_specific_meal_dict(meal):
     appetizer_id = meal["appetizer"]
@@ -336,6 +378,10 @@ def create_specific_meal_dict(meal):
     sugar_sum = get_sum("sugar_g", appetizer_id, main_id, dessert_id)
 
     new_dict = OrderedDict()
+
+    if cal_sum == -1 or sodium_sum == -1 or sugar_sum == -1:
+        return new_dict
+
     index_of_dish = meals_list.index(meal["name"])
     new_dict["name"] = meal["name"]
     new_dict["ID"] = index_of_dish
